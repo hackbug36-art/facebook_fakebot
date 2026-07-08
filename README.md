@@ -16,7 +16,7 @@ bash package/scripts/install.sh
 npm start
 ```
 
-Buka browser: **http://localhost:8080**
+Buka browser: **http://localhost:8080** /  http://0.0.0.0:8080/
 
 **Default admin:** `admin` / `admin`
 
