@@ -1,0 +1,29 @@
+- name: Augment Agent
+  # You may pin to the exact commit or the version.
+  # uses: augmentcode/augment-agent@148c9bd650107d0633eb9ebd520f1fb5d69bd63d
+  uses: augmentcode/augment-agent@0.1.2
+  with:
+    # Augment session authentication JSON. Alternative to augment_api_token and augment_api_url. Store as repository secret for security.
+    augment_session_auth: # optional
+    # API token for Augment services. Store as repository secret for security. Alternative to augment_session_auth.
+    augment_api_token: # optional
+    # URL endpoint for Augment API requests. Store as repository variable. Alternative to augment_session_auth.
+    augment_api_url: # optional
+    # GitHub token for API access. Must have 'repo' and 'user:email' scopes.
+    github_token: # optional
+    # Direct instruction text for the AI agent. Use this for simple, inline instructions. Mutually exclusive with instruction_file and template inputs.
+    instruction: # optional
+    # Path to file containing detailed instructions for the AI agent. Use this for complex, multi-line instructions. Mutually exclusive with instruction and template inputs.
+    instruction_file: # optional
+    # Path to directory containing template files. Use this for template-based instruction generation. Mutually exclusive with instruction and instruction_file.
+    template_directory: # optional
+    # Name of the template file to use (default: prompt.njk). Only used with template_directory.
+    template_name: # optional, default is prompt.njk
+    # Pull request number for extracting PR context. Required when using templates with PR data.
+    pull_number: # optional
+    # Repository name in format 'owner/repo'. Required when using templates with PR data.
+    repo_name: # optional
+    # Additional context data as JSON string to pass to templates.
+    custom_context: # optional
+    # Model to use; forwarded to auggie as --model
+    model: # optional
