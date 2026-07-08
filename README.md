@@ -22,6 +22,73 @@ Buka browser: **http://localhost:8080**
 
 ---
 
+## 🌐 Deploy for Free (Public Server)
+
+Deploy this app for free using GitHub integration:
+
+### Option 1: Vercel (Recommended)
+1. Fork this repo to your GitHub account
+2. Go to [vercel.com](https://vercel.com) and sign up with GitHub
+3. Click "Import Project" and select your fork
+4. Vercel will auto-detect Node.js settings
+5. Click "Deploy"
+
+Your app will be live at: `https://your-project.vercel.app`
+
+### Option 2: Railway
+1. Go to [railway.app](https://railway.app) and sign up with GitHub
+2. Click "New Project" → "Deploy from GitHub"
+3. Select your forked repo
+4. Railway will auto-deploy
+
+Free tier includes: $5/month credit (enough for small apps)
+
+### Option 3: Render
+1. Go to [render.com](https://render.com) and sign up with GitHub
+2. Click "New" → "Web Service"
+3. Connect your GitHub repo
+4. Build command: `npm install`
+5. Start command: `node server.js`
+6. Click "Create Web Service"
+
+Free tier includes: 100GB bandwidth/month
+
+### Option 4: Fly.io
+1. Install Fly CLI: `curl -L https://fly.io/install.sh | sh`
+2. Sign up: `fly auth signup`
+3. In project directory: `fly launch`
+4. Follow prompts to deploy
+
+Free tier includes: 3 shared VMs, 160GB outbound traffic
+
+---
+
+## ⚠️ Important Notes for Free Hosting
+
+### File Storage
+Free hosting platforms use **ephemeral filesystems**:
+- `data/` and `uploads/` will be **reset on restart/deploy**
+- For permanent storage, use external services:
+  - **Database**: Supabase (free PostgreSQL), Neon
+  - **File Storage**: Cloudinary (free tier), Supabase Storage
+
+### Session Storage
+Sessions are stored in memory. For production:
+- Use Redis: Upstash (free tier), Redis Cloud
+- Or database-backed sessions
+
+### Environment Variables
+Set these in your hosting platform dashboard:
+```
+NODE_ENV=production
+PORT=8080
+SESSION_SECRET=your-secret-key-here
+```
+
+See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
+
+---
+
 ## 📱 Supported Platforms
 
 | Platform | Method | Status |

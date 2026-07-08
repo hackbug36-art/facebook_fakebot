@@ -10,7 +10,6 @@ const cors = require('cors');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
-const { body, validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
 const Jimp = require('jimp');
 const ffmpeg = require('fluent-ffmpeg');
@@ -25,8 +24,9 @@ const UPLOAD_DIR = path.join(WEB_ROOT, 'uploads');
 const MEDIA_DIR = path.join(UPLOAD_DIR, 'media');
 
 app.set('trust proxy', 1);
+app.set('host', process.env.HOST || '0.0.0.0');
 
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
 app.use(compression());
 app.use(morgan('combined'));
 app.use(cookieParser());
@@ -51,6 +51,7 @@ if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true });
 if (!fs.existsSync(path.join(MEDIA_DIR, 'videos'))) fs.mkdirSync(path.join(MEDIA_DIR, 'videos'), { recursive: true });
 if (!fs.existsSync(path.join(MEDIA_DIR, 'music'))) fs.mkdirSync(path.join(MEDIA_DIR, 'music'), { recursive: true });
 if (!fs.existsSync(path.join(MEDIA_DIR, 'thumbnails'))) fs.mkdirSync(path.join(MEDIA_DIR, 'thumbnails'), { recursive: true });
+if (!fs.existsSync(path.join(MEDIA_DIR, 'avatars'))) fs.mkdirSync(path.join(MEDIA_DIR, 'avatars'), { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -152,11 +153,9 @@ async function createDefaultAdmin() {
     console.log('Default admin account created:');
     console.log('  Username: admin');
     console.log('  Password: admin');
-    console.log('  Login at: http://localhost:8080/login');
+    console.log('  Login at: http://' + (process.env.HOST || '0.0.0.0') + ':' + PORT + '/login');
   }
 }
-
-createDefaultAdmin();
 
 app.get('/', (req, res) => {
   if (req.session.userId) {
@@ -206,14 +205,6 @@ app.get('/posts/:id', (req, res) => {
   res.sendFile(path.join(WEB_ROOT, 'views', 'post-detail.html'));
 });
 
-app.get('/meta', (req, res) => {
-  res.sendFile(path.join(WEB_ROOT, 'index.html.meta'));
-});
-
-app.get('/bug-bounty', (req, res) => {
-  res.sendFile(path.join(WEB_ROOT, 'views', 'bug-bounty.html'));
-});
-
 app.get('/videos', (req, res) => {
   res.sendFile(path.join(WEB_ROOT, 'views', 'media-gallery.html'));
 });
@@ -234,11 +225,19 @@ app.get('/media', (req, res) => {
   res.sendFile(path.join(WEB_ROOT, 'views', 'media-gallery.html'));
 });
 
+app.get('/meta', (req, res) => {
+  res.sendFile(path.join(WEB_ROOT, 'index.html.meta'));
+});
+
+app.get('/bug-bounty', (req, res) => {
+  res.sendFile(path.join(WEB_ROOT, 'views', 'bug-bounty.html'));
+});
+
 app.get('/api/meta', (req, res) => {
   const meta = {
     server: 'Express.js + Facebook Engine',
     port: PORT,
-    host: 'localhost',
+    host: process.env.HOST || '0.0.0.0',
     root: WEB_ROOT,
     data: DATA_DIR,
     engine: path.join(WEB_ROOT, 'engine'),
@@ -264,7 +263,7 @@ app.get('/api/meta', (req, res) => {
       'DELETE /api/engine/media/:id/:type',
       'GET /videos', 'GET /videos/:id', 'GET /music', 'GET /music/:id', 'GET /media'
     ],
-    files: ['users.json', 'posts.json', 'comments.json', 'likes.json', 'stories.json', 'settings.json'],
+    files: ['users.json', 'posts.json', 'comments.json', 'likes.json', 'stories.json', 'settings.json', 'media.json'],
     session: 'express-session',
     auth: 'bcryptjs',
     engine: {
@@ -449,6 +448,17 @@ app.post('/api/engine/media/:id/play', (req, res) => {
   res.json({ success: true, views: media.views || media.plays });
 });
 
+app.delete('/api/engine/media/:id/:type', (req, res) => {
+  const user = requireAuth(req, res);
+  if (!user) return;
+  const { id, type } = req.params;
+  const media = engine.getMediaByType(type).find(m => m.id === id);
+  if (!media) return res.status(404).json({ error: 'Media not found' });
+  if (media.userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
+  engine.deleteMedia(id, type);
+  res.json({ success: true });
+});
+
 app.post('/api/users/upload-avatar', upload.single('avatar'), async (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
@@ -474,32 +484,6 @@ app.post('/api/users/upload-avatar', upload.single('avatar'), async (req, res) =
   } catch (err) {
     res.status(500).json({ error: 'Failed to process avatar' });
   }
-});
-
-app.delete('/api/engine/media/:id/:type', (req, res) => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-  const { id, type } = req.params;
-  const media = engine.getMediaByType(type).find(m => m.id === id);
-  if (!media) return res.status(404).json({ error: 'Media not found' });
-  if (media.userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
-  engine.deleteMedia(id, type);
-  res.json({ success: true });
-});
-
-app.get('/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const clientId = Date.now().toString();
-  engine.subscribe(clientId, (data) => {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  });
-
-  req.on('close', () => {
-    engine.unsubscribe(clientId);
-  });
 });
 
 app.get('/api/users/username/:username', (req, res) => {
@@ -748,13 +732,32 @@ app.put('/api/users/me', upload.single('avatar'), async (req, res) => {
   res.json({ success: true, user: safeUser });
 });
 
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const clientId = Date.now().toString();
+  engine.subscribe(clientId, (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  });
+
+  req.on('close', () => {
+    engine.unsubscribe(clientId);
+  });
+});
+
 app.get('/favicon.ico', (req, res) => res.status(204).send());
 app.get('/robots.txt', (req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
 
-app.listen(PORT, 'localhost', () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+app.listen(PORT, process.env.HOST || '0.0.0.0', async () => {
+  await createDefaultAdmin();
+  console.log(`Server running at http://${process.env.HOST || '0.0.0.0'}:${PORT}/`);
   console.log(`Static root: ${WEB_ROOT}`);
   console.log(`Data directory: ${DATA_DIR}`);
   console.log(`Engine directory: ${path.join(WEB_ROOT, 'engine')}`);
   console.log(`Live updates: SSE at /events`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+module.exports = app;

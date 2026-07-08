@@ -1,0 +1,17 @@
+{
+  "name": "facebook-fakebot",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "8080"
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}
