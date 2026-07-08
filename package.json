@@ -1,21 +1,47 @@
 {
-  "name": "facebook-fakebot",
-  "version": "2.0.0",
-  "description": "Facebook clone for bug bounty practice with engine, media players, and live updates",
+  "name": "facebook-fakebot-universal",
+  "version": "3.0.0",
+  "description": "Facebook clone for bug bounty practice - Universal package for all platforms (Web, Mobile, Desktop)",
   "main": "server.js",
+  "private": true,
+  "workspaces": [
+    "package/web",
+    "package/mobile",
+    "package/desktop"
+  ],
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "push": "bash push-to-github.sh",
-    "setup": "bash setup-github.sh"
+    "setup": "bash setup-github.sh",
+    "install:all": "npm install && cd package/web && npm install && cd ../mobile && npm install && cd ../desktop && npm install",
+    "build:web": "cd package/web && npm run build",
+    "build:mobile": "cd package/mobile && npm run build",
+    "build:desktop": "cd package/desktop && npm run build",
+    "build:docker": "docker build -t facebook-fakebot ./package/docker",
+    "docker:run": "docker run -p 8080:8080 facebook-fakebot",
+    "mobile:android": "cd package/mobile && npm run android",
+    "mobile:ios": "cd package/mobile && npm run ios",
+    "desktop:linux": "cd package/desktop && npm run linux",
+    "desktop:windows": "cd package/desktop && npm run windows",
+    "desktop:mac": "cd package/desktop && npm run mac",
+    "universal:install": "bash package/scripts/install.sh",
+    "universal:start": "bash package/scripts/start.sh"
   },
   "keywords": [
     "facebook",
     "clone",
     "bug-bounty",
-    "practice",
+    "security",
+    "pentesting",
+    "web",
+    "mobile",
+    "desktop",
+    "cross-platform",
     "express",
-    "nodejs"
+    "react",
+    "react-native",
+    "electron"
   ],
   "author": "hackbug36@gmail.com",
   "license": "MIT",
@@ -50,5 +76,12 @@
   "bugs": {
     "url": "https://github.com/hackbug36-art/facebook_fakebot/issues"
   },
-  "homepage": "https://github.com/hackbug36-art/facebook_fakebot#readme"
+  "homepage": "https://github.com/hackbug36-art/facebook_fakebot#readme",
+  "platforms": [
+    "linux",
+    "windows",
+    "macos",
+    "android",
+    "ios"
+  ]
 }

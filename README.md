@@ -1,72 +1,224 @@
-# Facebook Fake Bot - Bug Bounty Practice
+# Facebook FakeBot - Universal Package
 
-Clone Facebook untuk pembelajaran bug bounty. Berjalan di `localhost:8080`.
+Facebook clone untuk **bug bounty practice** - **Universal package** untuk semua platform: Web, Mobile (Android/iOS), Desktop (Windows/Mac/Linux), dan Docker.
 
-## Features
+## 🚀 Quick Install (All Platforms)
 
-- **Login/Register** - Username & password bebas
-- **Feed** - Postingan, like, comment, share
-- **Stories** - Dynamic stories
-- **Profiles** - `/u/:username` dan `/users/:id`
-- **Video Player** - `/videos/:id`
-- **Music Player** - `/music/:id` dengan playlist
-- **Media Gallery** - `/media` untuk semua video & music
-- **Bug Bounty Guide** - `/bug-bounty` dengan payloads & tools
-- **Live Updates** - SSE real-time tanpa refresh
-- **Dark Mode** - Auto theme toggle
-- **Mobile Responsive** - Bottom nav untuk mobile
+```bash
+# Clone repository
+git clone https://github.com/hackbug36-art/facebook_fakebot.git
+cd facebook_fakebot
 
-## Engine Structure
+# Run universal installer
+bash package/scripts/install.sh
 
-```
-engine/
-├── core/
-│   ├── engine.js      # Core data management
-│   ├── renderer.js    # Dynamic renderer
-│   └── config.js      # Configuration
-├── data/              # JSON data files
-│   ├── users.json
-│   ├── posts.json
-│   ├── media.json     # videos, music, playlists
-│   └── ...
-└── public/js/engine.js # Client-side SSE
+# Start server
+npm start
 ```
 
-## Quick Start
+Buka browser: **http://localhost:8080**
+
+**Default admin:** `admin` / `admin`
+
+---
+
+## 📱 Supported Platforms
+
+| Platform | Method | Status |
+|----------|--------|--------|
+| **Linux** | npm / Docker / Electron | ✅ Ready |
+| **Windows** | npm / Docker / Electron | ✅ Ready |
+| **macOS** | npm / Docker / Electron / iOS | ✅ Ready |
+| **Android** | Termux / React Native APK | ✅ Ready |
+| **iOS** | Safari / React Native IPA | ✅ Ready |
+| **Docker** | Docker / Docker Compose | ✅ Ready |
+
+---
+
+## 🛠️ Installation Methods
+
+### Method 1: Universal Script (Recommended)
+
+```bash
+bash package/scripts/install.sh
+```
+
+### Method 2: Web Only
+
+```bash
+npm install
+npm start
+```
+
+### Method 3: Docker
+
+```bash
+docker build -t facebook-fakebot ./package/docker
+docker run -p 8080:8080 facebook-fakebot
+```
+
+### Method 4: Desktop App
 
 ```bash
 # Install dependencies
 npm install
+cd package/desktop && npm install
 
-# Run server
-node server.js
+# Build for your platform
+npm run build:linux    # Linux
+npm run build:windows  # Windows
+npm run build:mac      # macOS
 
-# Open browser
-http://localhost:8080/
+# Or run in development
+npm run dev
 ```
 
-## Default Admin Account
+### Method 5: Mobile App
 
-On first run, a default admin account is automatically created:
+```bash
+# Install dependencies
+npm install
+cd package/mobile && npm install
+
+# Android
+npm run android
+
+# iOS (macOS only)
+npm run ios
+```
+
+---
+
+## 📦 Package Structure
+
+```
+facebook_fakebot/
+├── server.js              # Express backend
+├── engine/                # Core engine
+│   ├── core/
+│   │   ├── engine.js
+│   │   ├── renderer.js
+│   │   └── config.js
+│   └── data/
+│       ├── users.json
+│       ├── posts.json
+│       ├── media.json
+│       └── ...
+├── package/
+│   ├── web/               # React frontend
+│   │   ├── package.json
+│   │   └── src/
+│   ├── mobile/            # React Native app
+│   │   ├── package.json
+│   │   ├── index.js
+│   │   └── src/
+│   │       ├── App.js
+│   │       ├── screens/
+│   │       │   ├── LoginScreen.js
+│   │       │   ├── FeedScreen.js
+│   │       │   ├── ProfileScreen.js
+│   │       │   ├── MediaScreen.js
+│   │       │   └── BugBountyScreen.js
+│   │       └── assets/
+│   ├── desktop/           # Electron app
+│   │   ├── package.json
+│   │   └── electron/
+│   │       └── main.js
+│   ├── docker/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yml
+│   └── scripts/
+│       ├── install.sh
+│       └── start.sh
+└── docs/
+    ├── linux.md
+    ├── windows.md
+    ├── macos.md
+    ├── android.md
+    └── ios.md
+```
+
+---
+
+## 🎯 Features
+
+### Core Features
+- **Login/Register** - Username & password authentication
+- **Feed** - Post, like, comment, share
+- **Stories** - Dynamic stories system
+- **Profiles** - User profiles with `/u/:username`
+- **Video Player** - Watch videos with controls
+- **Music Player** - Listen to music with playlist
+- **Media Gallery** - Browse all media
+- **Bug Bounty Guide** - Learn security testing
+- **Live Updates** - Real-time via SSE
+- **Dark Mode** - Theme toggle
+- **Mobile Responsive** - Works on all screen sizes
+
+### Bug Bounty Targets
+- **IDOR** - Insecure Direct Object Reference
+- **XSS** - Cross-Site Scripting
+- **CSRF** - Cross-Site Request Forgery
+- **Session Fixation** - Session management issues
+- **Information Disclosure** - API meta exposure
+- **Broken Access Control** - Missing authorization checks
+
+---
+
+## 🔧 Platform-Specific Instructions
+
+### Linux
+See [docs/linux.md](package/docs/linux.md)
+
+### Windows
+See [docs/windows.md](package/docs/windows.md)
+
+### macOS
+See [docs/macos.md](package/docs/macos.md)
+
+### Android
+See [docs/android.md](package/docs/android.md)
+
+### iOS
+See [docs/ios.md](package/docs/ios.md)
+
+---
+
+## 🐳 Docker Deployment
+
+```bash
+# Build image
+npm run build:docker
+
+# Run container
+npm run docker:run
+
+# Or use docker-compose
+docker-compose -f package/docker/docker-compose.yml up
+```
+
+---
+
+## 🔐 Default Admin Account
 
 - **Username:** `admin`
 - **Password:** `admin`
-- **Login URL:** `http://localhost:8080/login`
+- **Login:** http://localhost:8080/login
 
-You can login immediately with these credentials and start exploring all features.
+---
 
-## API Endpoints
+## 📊 API Endpoints
 
-### Auth
-- `POST /api/auth/register` - Daftar
+### Authentication
+- `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/me` - Current user
 
 ### Posts
-- `GET /api/posts` - List posts
+- `GET /api/posts` - List all posts
 - `POST /api/posts` - Create post
-- `PUT /api/posts/:id` - Edit post
+- `PUT /api/posts/:id` - Update post
 - `DELETE /api/posts/:id` - Delete post
 - `POST /api/posts/:id/like` - Like/unlike
 - `POST /api/posts/:id/comments` - Add comment
@@ -85,44 +237,46 @@ You can login immediately with these credentials and start exploring all feature
 - `GET /api/engine/stories` - Stories
 - `GET /events` - SSE live updates
 
-## Bug Bounty Targets
+---
 
-Aplikasi ini sengaja mempunyai vulnerabilities untuk latihan:
+## 🛡️ Security Notice
 
-- **IDOR** - `/api/posts/:id`, `/api/users/:id`
-- **XSS** - Input tanpa sanitization
-- **CSRF** - Tiada token pada operasi
-- **Session Fixation** - Session tidak diubah
-- **Information Disclosure** - `/api/meta`, `/meta`
-- **Broken Access Control** - Tiada verifikasi pemilik
+This is a **practice environment** for learning bug bounty hunting. All vulnerabilities are **intentionally included** for educational purposes.
 
-## Pages
+- ⚠️ Do not use these techniques on systems you don't own
+- ⚠️ Do not use for illegal activities
+- ✅ Use only for learning and authorized testing
 
-- `/` - Feed utama
-- `/login` & `/register` - Auth
-- `/profile.html` - Profil sendiri
-- `/u/:username` - Profil pengguna
-- `/videos` - Video gallery
-- `/videos/:id` - Video player
-- `/music` - Music gallery
-- `/music/:id` - Music player
-- `/media` - Semua media
-- `/bug-bounty` - Panduan bug bounty
-- `/meta` - Meta information
+---
 
-## Tech Stack
+## 📝 License
 
-- **Backend**: Express.js + Node.js
-- **Session**: express-session
-- **Auth**: bcryptjs
-- **Live Updates**: Server-Sent Events (SSE)
-- **Frontend**: Vanilla JS + CSS
-- **Data**: JSON files (engine/data/)
+MIT - For educational purposes only.
 
-## License
+## 👤 Author
 
-MIT - Untuk tujuan pembelajaran sahaja.
+**hackbug36** - hackbug36@gmail.com
 
-## Author
+## 🔗 Repository
 
-hackbug36@gmail.com
+https://github.com/hackbug36-art/facebook_fakebot
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
+
+---
+
+## ⭐ Star History
+
+If you find this project useful for learning, please give it a star!
+
+---
+
+**Made with ❤️ for bug bounty hunters and security researchers**
