@@ -5,25 +5,101 @@ const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
 const engine = require('./engine/core/engine');
+const multer = require('multer');
+const cors = require('cors');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const morgan = require('morgan');
+const { body, validationResult } = require('express-validator');
+const { v4: uuidv4 } = require('uuid');
+const Jimp = require('jimp');
+const ffmpeg = require('fluent-ffmpeg');
+require('dotenv').config();
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const WEB_ROOT = '/home/tukuk/myweb';
 const DATA_DIR = path.join(WEB_ROOT, 'data');
 const ENGINE_DATA_DIR = path.join(WEB_ROOT, 'engine', 'data');
+const UPLOAD_DIR = path.join(WEB_ROOT, 'uploads');
+const MEDIA_DIR = path.join(UPLOAD_DIR, 'media');
 
+app.set('trust proxy', 1);
+
+app.use(cors());
+app.use(compression());
+app.use(morgan('combined'));
 app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/css', express.static(path.join(WEB_ROOT, 'public', 'css')));
 app.use('/js', express.static(path.join(WEB_ROOT, 'public', 'js')));
 app.use('/engine/public', express.static(path.join(WEB_ROOT, 'engine', 'public')));
+app.use('/uploads', express.static(UPLOAD_DIR));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api/', limiter);
+
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true });
+if (!fs.existsSync(path.join(MEDIA_DIR, 'videos'))) fs.mkdirSync(path.join(MEDIA_DIR, 'videos'), { recursive: true });
+if (!fs.existsSync(path.join(MEDIA_DIR, 'music'))) fs.mkdirSync(path.join(MEDIA_DIR, 'music'), { recursive: true });
+if (!fs.existsSync(path.join(MEDIA_DIR, 'thumbnails'))) fs.mkdirSync(path.join(MEDIA_DIR, 'thumbnails'), { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = 'general';
+    if (file.fieldname === 'video') folder = 'videos';
+    else if (file.fieldname === 'music') folder = 'music';
+    else if (file.fieldname === 'avatar') folder = 'avatars';
+    else if (file.fieldname === 'thumbnail') folder = 'thumbnails';
+    cb(null, path.join(MEDIA_DIR, folder));
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${uuidv4()}${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedVideo = ['video/mp4', 'video/webm', 'video/ogg'];
+  const allowedAudio = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3'];
+  const allowedImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  
+  if (file.fieldname === 'video' && allowedVideo.includes(file.mimetype)) {
+    cb(null, true);
+  } else if (file.fieldname === 'music' && allowedAudio.includes(file.mimetype)) {
+    cb(null, true);
+  } else if (file.fieldname === 'avatar' || file.fieldname === 'thumbnail') {
+    if (allowedImage.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid image type'), false);
+  } else {
+    cb(new Error('Invalid file type'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 500 * 1024 * 1024
+  }
+});
 
 app.use(session({
-  secret: 'fb-local-clone-secret-key',
+  secret: process.env.SESSION_SECRET || 'fb-local-clone-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 
+  }
 }));
 
 function readJson(file, defaultValue) {
@@ -55,6 +131,32 @@ function requireAuth(req, res) {
   }
   return user;
 }
+
+async function createDefaultAdmin() {
+  const users = readJson('users.json', []);
+  const adminExists = users.find(u => u.username === 'admin');
+  
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('admin', 10);
+    const admin = {
+      id: 'user_admin_' + Date.now(),
+      username: 'admin',
+      name: 'Administrator',
+      password: hashedPassword,
+      avatar: 'https://ui-avatars.com/api/?name=Admin&background=1877F2&color=fff&size=200',
+      bio: 'Default administrator account',
+      createdAt: new Date().toISOString()
+    };
+    users.push(admin);
+    writeJson('users.json', users);
+    console.log('Default admin account created:');
+    console.log('  Username: admin');
+    console.log('  Password: admin');
+    console.log('  Login at: http://localhost:8080/login');
+  }
+}
+
+createDefaultAdmin();
 
 app.get('/', (req, res) => {
   if (req.session.userId) {
@@ -264,17 +366,39 @@ app.get('/api/engine/media/playlists', (req, res) => {
   res.json({ playlists: engine.getMediaByType('playlists') });
 });
 
-app.post('/api/engine/media/videos', (req, res) => {
+app.post('/api/engine/media/videos', upload.single('video'), async (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
-  const { title, url, thumbnail, duration } = req.body;
+  const { title, duration } = req.body;
+  
+  let thumbnail = '';
+  if (req.file) {
+    try {
+      const thumbPath = path.join(MEDIA_DIR, 'thumbnails', `thumb_${Date.now()}.jpg`);
+      await new Promise((resolve, reject) => {
+        ffmpeg(req.file.path)
+          .screenshots({
+            count: 1,
+            folder: path.join(MEDIA_DIR, 'thumbnails'),
+            filename: `thumb_${Date.now()}.jpg`,
+            size: '400x225'
+          })
+          .on('end', resolve)
+          .on('error', reject);
+      });
+      thumbnail = `/uploads/media/thumbnails/thumb_${Date.now()}.jpg`;
+    } catch (err) {
+      console.error('Thumbnail generation failed:', err);
+    }
+  }
+  
   const video = {
     id: 'video_' + Date.now(),
     postId: req.body.postId || null,
     userId: user.id,
     title: title || 'Untitled Video',
-    url: url || '',
-    thumbnail: thumbnail || '',
+    url: req.file ? `/uploads/media/videos/${req.file.filename}` : (req.body.url || ''),
+    thumbnail: thumbnail || req.body.thumbnail || '',
     duration: duration || '0:00',
     views: 0,
     createdAt: new Date().toISOString()
@@ -282,18 +406,31 @@ app.post('/api/engine/media/videos', (req, res) => {
   res.json({ success: true, video: engine.addMedia(video) });
 });
 
-app.post('/api/engine/media/music', (req, res) => {
+app.post('/api/engine/media/music', upload.single('music'), async (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
-  const { title, artist, url, cover, duration } = req.body;
+  const { title, artist, duration } = req.body;
+  
+  let cover = '';
+  if (req.file) {
+    try {
+      const coverPath = path.join(MEDIA_DIR, 'thumbnails', `cover_${Date.now()}.png`);
+      const image = await Jimp.read(req.file.path);
+      await image.resize(200, 200).writeAsync(coverPath);
+      cover = `/uploads/media/thumbnails/${path.basename(coverPath)}`;
+    } catch (err) {
+      console.error('Cover generation failed:', err);
+    }
+  }
+  
   const track = {
     id: 'music_' + Date.now(),
     postId: req.body.postId || null,
     userId: user.id,
     title: title || 'Untitled Track',
     artist: artist || 'Unknown Artist',
-    url: url || '',
-    cover: cover || '',
+    url: req.file ? `/uploads/media/music/${req.file.filename}` : (req.body.url || ''),
+    cover: cover || req.body.cover || '',
     duration: duration || '0:00',
     plays: 0,
     createdAt: new Date().toISOString()
@@ -310,6 +447,33 @@ app.post('/api/engine/media/:id/play', (req, res) => {
   if (media.plays !== undefined) media.plays = (media.plays || 0) + 1;
   
   res.json({ success: true, views: media.views || media.plays });
+});
+
+app.post('/api/users/upload-avatar', upload.single('avatar'), async (req, res) => {
+  const user = requireAuth(req, res);
+  if (!user) return;
+  
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  
+  try {
+    const users = readJson('users.json', []);
+    const idx = users.findIndex(u => u.id === user.id);
+    if (idx === -1) return res.status(404).json({ error: 'User not found' });
+    
+    const avatarPath = path.join(MEDIA_DIR, 'avatars', `avatar_${Date.now()}.png`);
+    const image = await Jimp.read(req.file.path);
+    await image.resize(200, 200).writeAsync(avatarPath);
+    
+    users[idx].avatar = `/uploads/media/avatars/${path.basename(avatarPath)}`;
+    writeJson('users.json', users);
+    
+    const { password, ...safeUser } = users[idx];
+    res.json({ success: true, user: safeUser });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process avatar' });
+  }
 });
 
 app.delete('/api/engine/media/:id/:type', (req, res) => {
@@ -556,13 +720,26 @@ app.get('/api/users/:id', (req, res) => {
   res.json({ user: safeUser });
 });
 
-app.put('/api/users/me', (req, res) => {
+app.put('/api/users/me', upload.single('avatar'), async (req, res) => {
   const user = requireAuth(req, res);
   if (!user) return;
   const users = readJson('users.json', []);
   const idx = users.findIndex(u => u.id === user.id);
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
-  const { name, bio, avatar } = req.body;
+  
+  let avatar = req.body.avatar;
+  if (req.file) {
+    try {
+      const avatarPath = path.join(MEDIA_DIR, 'avatars', `avatar_${Date.now()}.png`);
+      const image = await Jimp.read(req.file.path);
+      await image.resize(200, 200).writeAsync(avatarPath);
+      avatar = `/uploads/media/avatars/${path.basename(avatarPath)}`;
+    } catch (err) {
+      console.error('Avatar processing failed:', err);
+    }
+  }
+  
+  const { name, bio } = req.body;
   if (name) users[idx].name = name;
   if (bio !== undefined) users[idx].bio = bio;
   if (avatar) users[idx].avatar = avatar;

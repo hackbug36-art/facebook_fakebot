@@ -45,6 +45,16 @@ node server.js
 http://localhost:8080/
 ```
 
+## Default Admin Account
+
+On first run, a default admin account is automatically created:
+
+- **Username:** `admin`
+- **Password:** `admin`
+- **Login URL:** `http://localhost:8080/login`
+
+You can login immediately with these credentials and start exploring all features.
+
 ## API Endpoints
 
 ### Auth

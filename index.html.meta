@@ -49,12 +49,27 @@ Files:
   - settings.json
   - media.json
 
+Libraries:
+  - express: Web framework
+  - multer: File upload handling
+  - cors: Cross-origin requests
+  - compression: Gzip compression
+  - express-rate-limit: Rate limiting
+  - morgan: HTTP request logging
+  - express-validator: Input validation
+  - bcryptjs: Password hashing
+  - express-session: Session management
+  - jimp: Image processing/thumbnails
+  - fluent-ffmpeg: Video processing
+  - uuid: Unique ID generation
+  - dotenv: Environment variables
+
 Media:
   - Videos: MP4, WebM, OGG
   - Music: MP3, WAV, OGG
   - Max file size: 500MB
   - Supported formats: video/mp4, video/webm, audio/mpeg, audio/wav
-  - Thumbnail generation: Auto
+  - Thumbnail generation: Auto via Jimp/FFmpeg
   - Streaming: HLS support
 
 Endpoints:
