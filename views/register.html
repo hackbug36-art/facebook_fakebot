@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar - Facebook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">facebook</div>
+      <div class="auth-title">Buat Akun Baru</div>
+      <div class="auth-subtitle">Cepat dan mudah.</div>
+      <div id="registerError" class="error-msg"></div>
+      <div id="fileWarning" class="error-msg" style="display:none;background:#fff3cd;color:#856404;">
+        Anda membuka halaman ini sebagai fail (file://). Sila buka melalui pelayan di <a href="http://localhost:8080/register" style="color:#0866FF;font-weight:600;">http://localhost:8080/register</a>
+      </div>
+      <form id="registerForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="regUsername" required placeholder="Username unik">
+        </div>
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="regName" required placeholder="Nama Anda">
+        </div>
+        <div class="form-group">
+          <label>Kata Sandi</label>
+          <input type="password" id="regPassword" required placeholder="Kata sandi baru" minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary">Daftar</button>
+      </form>
+      <div class="auth-footer">
+        Sudah punya akun? <a href="/login">Masuk</a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/app.js"></script>
+  <script>
+    setTheme(getTheme());
+    if (window.location.protocol === 'file:') {
+      document.getElementById('fileWarning').style.display = 'block';
+    }
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError('registerError');
+      try {
+        const data = await api('/api/auth/register', {
+          method: 'POST',
+          body: {
+            username: document.getElementById('regUsername').value,
+            name: document.getElementById('regName').value,
+            password: document.getElementById('regPassword').value
+          }
+        });
+        currentUser = data.user;
+        window.location.href = '/';
+      } catch (err) {
+        showError('registerError', err.message);
+      }
+    });
+  </script>
+</body>
+</html>

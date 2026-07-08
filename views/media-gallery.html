@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media - Facebook</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .media-card {
+      background: var(--fb-card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .media-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .media-thumbnail {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .media-info {
+      padding: 12px;
+    }
+    .media-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .media-meta {
+      font-size: 13px;
+      color: var(--fb-text-secondary);
+    }
+    .media-type-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .media-card-wrapper {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="/" class="logo">facebook</a>
+    </div>
+    <div class="navbar-center">
+      <input type="text" class="search-bar" placeholder="Cari media...">
+    </div>
+    <div class="navbar-right">
+      <a href="/" class="nav-item" title="Beranda">🏠</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div id="authSection">
+        <a href="/login" class="nav-item" title="Masuk">👤</a>
+      </div>
+      <div id="userSection" class="d-none">
+        <a href="/profile.html" class="nav-item" title="Profil">
+          <img id="navAvatar" src="" class="nav-avatar" alt="">
+        </a>
+        <button class="nav-item" onclick="logout()" title="Keluar">🚪</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:80px;">
+    <div class="main-content" style="max-width:1200px;margin:0 auto;flex:none;">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="padding:16px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="width:auto;padding:8px 24px;" onclick="filterMedia('all')">Semua</button>
+          <button class="btn btn-secondary" style="width:auto;padding:8px 24px;" onclick="filterMedia('video')">🎬 Video</button>
+          <button class="btn btn-secondary" style="width:auto;padding:8px 24px;" onclick="filterMedia('music')">🎵 Music</button>
+        </div>
+      </div>
+
+      <div id="mediaGallery" class="media-grid"></div>
+    </div>
+  </div>
+
+  <div class="mobile-nav">
+    <button class="mobile-nav-item active" onclick="window.location.href='/'">
+      <span>🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/bug-bounty'">
+      <span>🐛</span>
+      <span>Bug Bounty</span>
+    </button>
+    <button class="mobile-nav-item" onclick="openCreateModal()">
+      <span>➕</span>
+      <span>Posting</span>
+    </button>
+    <button class="mobile-nav-item" onclick="alert('Fitur segera hadir')">
+      <span>💬</span>
+      <span>Pesan</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/profile.html'">
+      <span>👤</span>
+      <span>Profil</span>
+    </button>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/engine/public/js/engine.js"></script>
+  <script>
+    setTheme(getTheme());
+    
+    async function loadMediaGallery(filter = 'all') {
+      const container = document.getElementById('mediaGallery');
+      try {
+        const [videosData, musicData] = await Promise.all([
+          EngineAPI.get('/api/engine/media/videos'),
+          EngineAPI.get('/api/engine/media/music')
+        ]);
+
+        let items = [];
+        
+        if (filter === 'all' || filter === 'video') {
+          items.push(...videosData.videos.map(v => ({
+            ...v,
+            type: 'video',
+            url: `/videos/${v.id}`,
+            thumbnail: v.thumbnail,
+            title: v.title,
+            meta: `${v.views || 0} tontonan • ${v.duration || '0:00'}`
+          })));
+        }
+        
+        if (filter === 'all' || filter === 'music') {
+          items.push(...musicData.music.map(m => ({
+            ...m,
+            type: 'music',
+            url: `/music/${m.id}`,
+            thumbnail: m.cover,
+            title: `${m.title} - ${m.artist || 'Unknown'}`,
+            meta: `${m.plays || 0} mainan • ${m.duration || '0:00'}`
+          })));
+        }
+
+        if (!items.length) {
+          container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#65676b;padding:40px;">Tiada media</div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="media-card" onclick="window.location.href='${item.url}'">
+            <div class="media-card-wrapper">
+              <img src="${item.thumbnail}" class="media-thumbnail" alt="">
+              <div class="media-type-badge">${item.type === 'video' ? '🎬 VIDEO' : '🎵 MUSIC'}</div>
+            </div>
+            <div class="media-info">
+              <div class="media-title">${escapeHtml(item.title)}</div>
+              <div class="media-meta">${item.meta}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f3425f;padding:40px;">Gagal memuat: ${err.message}</div>`;
+      }
+    }
+
+    function filterMedia(type) {
+      loadMediaGallery(type);
+    }
+
+    async function init() {
+      await checkAuth();
+      if (!currentUser) {
+        window.location.href = '/login';
+        return;
+      }
+      loadMediaGallery('all');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

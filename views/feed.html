@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="/" class="logo">facebook</a>
+    </div>
+    <div class="navbar-center">
+      <input type="text" class="search-bar" placeholder="Cari di Facebook">
+    </div>
+    <div class="navbar-right">
+      <a href="/" class="nav-item" title="Beranda">🏠</a>
+      <a href="#" class="nav-item" title="Watch">🎬</a>
+      <a href="#" class="nav-item" title="Marketplace">🏪</a>
+      <a href="#" class="nav-item" title="Grup">👥</a>
+      <a href="#" class="nav-item" title="Gaming">🎮</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div id="authSection">
+        <a href="/login" class="nav-item" title="Masuk">👤</a>
+      </div>
+      <div id="userSection" class="d-none">
+        <a href="/profile.html" class="nav-item" title="Profil">
+          <img id="navAvatar" src="" class="nav-avatar" alt="">
+        </a>
+        <button class="nav-item" onclick="logout()" title="Keluar">🚪</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Left Sidebar -->
+    <aside class="left-sidebar">
+      <div class="card">
+        <div class="sidebar-item" onclick="openCreateModal()">
+          <div class="sidebar-icon">📝</div>
+          <span>Buat Postingan</span>
+        </div>
+        <div class="sidebar-item" onclick="window.location.href=`/u/${currentUser?.username || ''}`">
+          <img id="sidebarAvatar" src="" class="sidebar-avatar" alt="">
+          <span id="sidebarName">Profil Saya</span>
+        </div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">👥</div>
+          <span>Teman</span>
+        </div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">💬</div>
+          <span>Pesan</span>
+        </div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">🔖</div>
+          <span>Simpanan</span>
+        </div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">📄</div>
+          <span>Halaman</span>
+        </div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">📋</div>
+          <span>Meta Info</span>
+        </div>
+          <div class="sidebar-item" onclick="window.open('/meta','_blank')">
+            <div class="sidebar-icon">🔍</div>
+            <span>API Endpoints</span>
+          </div>
+        <div class="sidebar-item" onclick="window.location.href='/bug-bounty'">
+          <div class="sidebar-icon">🐛</div>
+          <span>Bug Bounty</span>
+        </div>
+        <div class="sidebar-item" onclick="window.location.href='/media'">
+          <div class="sidebar-icon">🎬</div>
+          <span>Media</span>
+        </div>
+        <div class="sidebar-item" onclick="window.open(`/u/${currentUser?.username || ''}`,'_blank')">
+          <div class="sidebar-icon">👤</div>
+          <span>Profil Saya</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Stories -->
+      <div class="card">
+        <div class="stories-container" id="storiesContainer">
+          <div class="story-item create-story" onclick="openCreateModal()">
+            <div class="story-overlay" style="background: rgba(0,0,0,0.2);"></div>
+            <img src="https://ui-avatars.com/api/?name=Create&background=1877F2&color=fff" class="story-image" alt="">
+            <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:36px;height:36px;border-radius:50%;background:#1877F2;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;">+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Post -->
+      <div class="card">
+        <div class="create-post">
+          <div class="create-post-top">
+            <img id="createAvatar" src="" class="create-post-avatar" alt="">
+            <div class="create-post-input" onclick="openCreateModal()">
+              Apa yang Anda pikirkan?
+            </div>
+          </div>
+          <div class="create-post-actions">
+            <button class="create-post-btn" onclick="openCreateModal()">📷 Foto</button>
+            <button class="create-post-btn" onclick="openCreateModal()">😊 Perasaan</button>
+            <button class="create-post-btn" onclick="openCreateModal()">📍 Lokasi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Posts Feed -->
+      <div id="postsContainer"></div>
+      
+      <!-- Media Section -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">🎬 Video & 🎵 Music</div>
+        <div id="mediaSection" style="padding:16px;">
+          <div class="media-grid" id="mediaGrid"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="right-sidebar">
+      <div class="card">
+        <div class="section-title">Pendekatan</div>
+        <div id="shortcuts" style="padding:4px 8px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Teman Online</div>
+        <div id="onlineFriends"></div>
+      </div>
+
+      <div class="card">
+        <div class="birthday-item">
+          <span class="birthday-icon">🎂</span>
+          <span class="birthday-text"><strong>Tukuk Do</strong> dan <strong>2 lain</strong> hari ini.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sponsored-label">Iklan</div>
+        <div class="sidebar-item">
+          <div class="sidebar-icon">🛒</div>
+          <span>Belanja Online</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <div class="mobile-nav">
+    <button class="mobile-nav-item active" onclick="window.location.href='/'">
+      <span>🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/bug-bounty'">
+      <span>🐛</span>
+      <span>Bug Bounty</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/media'">
+      <span>🎬</span>
+      <span>Media</span>
+    </button>
+    <button class="mobile-nav-item" onclick="openCreateModal()">
+      <span>➕</span>
+      <span>Posting</span>
+    </button>
+    <button class="mobile-nav-item" onclick="alert('Fitur segera hadir')">
+      <span>💬</span>
+      <span>Pesan</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/profile.html'">
+      <span>👤</span>
+      <span>Profil</span>
+    </button>
+  </div>
+
+  <!-- Create Post Modal -->
+  <div id="postModal" class="modal-overlay" onclick="if(event.target===this)closeCreateModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="postModalTitle">Buat Postingan</div>
+        <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <img id="modalAvatar" src="" class="post-avatar" alt="">
+          <div>
+            <div id="modalUserName" style="font-weight:600;"></div>
+          </div>
+        </div>
+        <textarea id="modalPostContent" rows="4" placeholder="Apa yang Anda pikirkan?" style="width:100%;border:none;font-size:16px;resize:vertical;font-family:inherit;"></textarea>
+        <input type="text" id="modalPostImage" placeholder="URL gambar (opsional)" style="width:100%;padding:8px;border:1px solid #ced0d4;border-radius:6px;margin-top:8px;font-size:14px;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeCreateModal()">Batal</button>
+        <button class="btn btn-primary" onclick="submitPost()" style="width:auto;padding:8px 24px;">Posting</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/engine/public/js/engine.js"></script>
+  <script>
+    async function loadOnlineFriends() {
+      const container = document.getElementById('onlineFriends');
+      try {
+        const data = await api('/api/users');
+        const friends = data.users.filter(u => u.id !== currentUser?.id).slice(0, 8);
+        if (!friends.length) {
+          container.innerHTML = '<div style="text-align:center;color:#65676b;padding:20px;">Belum ada teman</div>';
+          return;
+        }
+        container.innerHTML = friends.map(f => `
+          <div class="sidebar-item" style="padding:6px 0;">
+            <img src="${f.avatar || getAvatarUrl(f.name)}" class="sidebar-avatar" alt="">
+            <span style="font-size:14px;">${escapeHtml(f.name)}</span>
+          </div>
+        `).join('');
+      } catch {
+        container.innerHTML = '<div style="text-align:center;color:#65676b;padding:20px;">Gagal memuat</div>';
+      }
+    }
+
+    async function init() {
+      await checkAuth();
+      if (!currentUser) {
+        window.location.href = '/login';
+        return;
+      }
+      const avatar = currentUser.avatar || getAvatarUrl(currentUser.name);
+      document.getElementById('navAvatar').src = avatar;
+      document.getElementById('sidebarAvatar').src = avatar;
+      document.getElementById('sidebarName').textContent = currentUser.name;
+      document.getElementById('createAvatar').src = avatar;
+      document.getElementById('modalAvatar').src = avatar;
+      document.getElementById('modalUserName').textContent = currentUser.name;
+      loadPosts();
+      loadStories();
+      loadShortcuts();
+      loadOnlineFriends();
+      loadMediaSection();
+      
+      if (window.Engine && window.Engine.init) {
+        window.Engine.init();
+      }
+    }
+
+    async function loadMediaSection() {
+      const container = document.getElementById('mediaGrid');
+      try {
+        const [videosData, musicData] = await Promise.all([
+          fetch('/api/engine/media/videos').then(r => r.json()),
+          fetch('/api/engine/media/music').then(r => r.json())
+        ]);
+
+        const items = [
+          ...videosData.videos.slice(0, 3).map(v => ({
+            type: 'video',
+            id: v.id,
+            title: v.title,
+            thumbnail: v.thumbnail,
+            url: `/videos/${v.id}`,
+            meta: `${v.views || 0} tontonan`
+          })),
+          ...musicData.music.slice(0, 3).map(m => ({
+            type: 'music',
+            id: m.id,
+            title: `${m.title} - ${m.artist || 'Unknown'}`,
+            thumbnail: m.cover,
+            url: `/music/${m.id}`,
+            meta: `${m.plays || 0} mainan`
+          }))
+        ];
+
+        if (!items.length) {
+          container.innerHTML = '<div style="text-align:center;color:#65676b;padding:20px;">Tiada media</div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="media-card" onclick="window.location.href='${item.url}'">
+            <div class="media-card-wrapper">
+              <img src="${item.thumbnail}" class="media-thumbnail" alt="">
+              <div class="media-type-badge">${item.type === 'video' ? '🎬' : '🎵'}</div>
+            </div>
+            <div class="media-info">
+              <div class="media-title">${escapeHtml(item.title)}</div>
+              <div class="media-meta">${item.meta}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<div style="text-align:center;color:#65676b;padding:20px;">Gagal memuat media</div>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

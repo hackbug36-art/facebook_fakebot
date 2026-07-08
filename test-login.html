@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <form id="testForm">
+    <input type="text" id="u" placeholder="username">
+    <input type="text" id="p" placeholder="password">
+    <button type="submit">Test</button>
+  </form>
+  <div id="result"></div>
+  <script>
+    document.getElementById('testForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const result = document.getElementById('result');
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            username: document.getElementById('u').value,
+            password: document.getElementById('p').value
+          })
+        });
+        const data = await res.json();
+        result.textContent = JSON.stringify(data);
+      } catch (err) {
+        result.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

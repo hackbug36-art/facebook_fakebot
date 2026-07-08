@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil - Facebook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="/" class="logo">facebook</a>
+    </div>
+    <div class="navbar-center">
+      <input type="text" class="search-bar" placeholder="Cari di Facebook">
+    </div>
+    <div class="navbar-right">
+      <div id="authSection">
+        <a href="/login" class="nav-item" title="Masuk">👤</a>
+      </div>
+      <div id="userSection" class="d-none">
+        <a href="/profile.html" class="nav-item" title="Profil">
+          <img id="navAvatar" src="" class="nav-avatar" alt="">
+        </a>
+        <button class="nav-item" onclick="logout()" title="Keluar">🚪</button>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <a href="/bug-bounty" class="nav-item" title="Bug Bounty" style="font-size:14px;">🐛</a>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:80px;">
+    <div class="main-content" style="max-width:900px;margin:0 auto;flex:none;">
+      <div class="card profile-header">
+        <div class="profile-cover"></div>
+        <div class="profile-info">
+          <img id="profileAvatar" src="" class="profile-avatar-large" alt="">
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-bio" id="profileBio"></div>
+          <div id="profileActions" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Postingan</div>
+        <div id="profilePosts"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let profileUserId = null;
+    let isOwnProfile = false;
+
+    async function loadProfile() {
+      const pathParts = window.location.pathname.split('/');
+      let identifier = pathParts[2];
+      const type = pathParts[1];
+      
+      try {
+        let data;
+        if (type === 'u') {
+          data = await api(`/api/users/username/${identifier}`);
+        } else if (type === 'users') {
+          data = await api(`/api/users/${identifier}`);
+        } else {
+          window.location.href = '/login';
+          return;
+        }
+        const user = data.user;
+        profileUserId = user.id;
+        isOwnProfile = currentUser && currentUser.id === user.id;
+        
+        document.getElementById('profileName').textContent = user.name;
+        document.getElementById('profileBio').textContent = user.bio || 'Belum ada bio.';
+        document.getElementById('profileAvatar').src = user.avatar || getAvatarUrl(user.name);
+        
+        const actionsEl = document.getElementById('profileActions');
+        if (isOwnProfile) {
+          actionsEl.innerHTML = `<button class="btn btn-primary" style="width:auto;padding:6px 16px;font-size:14px;" onclick="window.location.href='/profile.html'">Edit Profil</button>`;
+        }
+        
+        await loadProfilePosts();
+      } catch {
+        window.location.href = '/login';
+      }
+    }
+
+    async function loadProfilePosts() {
+      const container = document.getElementById('profilePosts');
+      try {
+        const data = await api(`/api/users/${profileUserId}/posts`);
+        if (!data.posts.length) {
+          container.innerHTML = '<div style="padding:20px;text-align:center;color:#65676b;">Belum ada postingan</div>';
+          return;
+        }
+        container.innerHTML = data.posts.map(post => `
+          <div class="post" style="border-bottom:1px solid #ced0d4;padding:16px;">
+            <div class="post-header">
+              <img src="${post.authorAvatar || getAvatarUrl(post.authorName)}" class="post-avatar" alt="">
+              <div>
+                <div class="post-author">${escapeHtml(post.authorName)}</div>
+                <div class="post-time">${formatTime(post.createdAt)}</div>
+              </div>
+            </div>
+            <div class="post-content">${escapeHtml(post.content)}</div>
+            ${post.image ? `<img src="${post.image}" class="post-image" alt="">` : ''}
+            <div class="post-stats">
+              <span>${post.likesCount} suka</span>
+              <span>${post.commentsCount} komentar</span>
+            </div>
+          </div>
+        `).join('');
+      } catch {
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:#f3425f;">Gagal memuat postingan</div>';
+      }
+    }
+
+    async function init() {
+      await checkAuth();
+      if (!currentUser) {
+        window.location.href = '/login';
+        return;
+      }
+      loadProfile();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

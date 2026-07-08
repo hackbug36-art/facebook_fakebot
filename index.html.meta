@@ -1,0 +1,102 @@
+Bug Bounty Practice Environment
+===============================
+
+Server: Express.js
+Port: 8080
+Host: localhost
+Root: /home/tukuk/myweb
+Data: /home/tukuk/myweb/data
+Views: /home/tukuk/myweb/views
+Public: /home/tukuk/myweb/public
+Node: v24.18.0
+OS: Linux
+Time: 2026-07-08T11:55:00+08:00
+
+Endpoints:
+  - GET /
+  - GET /login
+  - GET /register
+  - GET /feed.html
+  - GET /profile.html
+  - GET /u/:username
+  - GET /users/:id
+  - GET /posts/:id
+  - GET /meta
+  - GET /bug-bounty
+  - GET /api/meta
+  - POST /api/auth/register
+  - POST /api/auth/login
+  - POST /api/auth/logout
+  - GET /api/auth/me
+  - GET /api/posts
+  - POST /api/posts
+  - PUT /api/posts/:id
+  - DELETE /api/posts/:id
+  - POST /api/posts/:id/like
+  - POST /api/posts/:id/comments
+  - GET /api/users
+  - GET /api/users/:id
+  - GET /api/users/username/:username
+  - GET /api/users/:id/posts
+  - PUT /api/users/me
+
+Files:
+  - users.json
+  - posts.json
+  - comments.json
+  - likes.json
+  - stories.json
+  - settings.json
+  - media.json
+
+Media:
+  - Videos: MP4, WebM, OGG
+  - Music: MP3, WAV, OGG
+  - Max file size: 500MB
+  - Supported formats: video/mp4, video/webm, audio/mpeg, audio/wav
+  - Thumbnail generation: Auto
+  - Streaming: HLS support
+
+Endpoints:
+  - GET /videos - Video gallery
+  - GET /videos/:id - Video player
+  - GET /music - Music gallery  
+  - GET /music/:id - Music player
+  - GET /media - All media gallery
+  - POST /api/engine/media/videos - Upload video
+  - POST /api/engine/media/music - Upload music
+  - POST /api/engine/media/:id/play - Record play
+  - DELETE /api/engine/media/:id/:type - Delete media
+  - GET /api/engine/media/videos - List videos
+  - GET /api/engine/media/music - List music
+Auth: bcryptjs
+Bug Bounty Targets:
+  - IDOR (Insecure Direct Object Reference)
+  - Authentication Bypass
+  - Session Fixation
+  - CSRF (Cross-Site Request Forgery)
+  - XSS (Cross-Site Scripting)
+  - SSRF (Server-Side Request Forgery)
+  - Information Disclosure
+  - Broken Access Control
+  - Rate Limiting Bypass
+  - Insecure Deserialization
+
+Vulnerable Endpoints:
+  - /api/posts/:id (IDOR - no ownership check)
+  - /api/users/:id (IDOR - direct access)
+  - /api/users/me (Authorization)
+  - /api/auth/me (Session validation)
+  - /u/:username (Information Disclosure)
+  - /api/meta (Information Disclosure)
+  - /meta (Information Disclosure)
+
+Test Payloads:
+  - IDOR: Change /posts/123 to /posts/124
+  - XSS: <script>alert(1)</script> in name/content/comments
+  - CSRF: State-changing ops without tokens
+  - Auth: Access /api/auth/me without session
+
+Notes: Local clone for bug bounty practice. Not connected to Facebook.
+Security: Intentionally vulnerable for educational purposes.
+

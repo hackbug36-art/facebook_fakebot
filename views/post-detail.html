@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postingan - Facebook</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <a href="/" class="logo">facebook</a>
+    </div>
+    <div class="navbar-center">
+      <input type="text" class="search-bar" placeholder="Cari di Facebook">
+    </div>
+    <div class="navbar-right">
+      <a href="/" class="nav-item" title="Beranda">🏠</a>
+      <a href="#" class="nav-item" title="Watch">🎬</a>
+      <a href="#" class="nav-item" title="Marketplace">🏪</a>
+      <a href="#" class="nav-item" title="Grup">👥</a>
+      <a href="#" class="nav-item" title="Gaming">🎮</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div id="authSection">
+        <a href="/login" class="nav-item" title="Masuk">👤</a>
+      </div>
+      <div id="userSection" class="d-none">
+        <a href="/profile.html" class="nav-item" title="Profil">
+          <img id="navAvatar" src="" class="nav-avatar" alt="">
+        </a>
+        <button class="nav-item" onclick="logout()" title="Keluar">🚪</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:80px;">
+    <div class="main-content" style="max-width:680px;margin:0 auto;flex:none;">
+      <div id="postDetail"></div>
+    </div>
+  </div>
+
+  <div class="mobile-nav">
+    <button class="mobile-nav-item active" onclick="window.location.href='/'">
+      <span>🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-item" onclick="alert('Fitur segera hadir')">
+      <span>👥</span>
+      <span>Teman</span>
+    </button>
+    <button class="mobile-nav-item" onclick="openCreateModal()">
+      <span>➕</span>
+      <span>Posting</span>
+    </button>
+    <button class="mobile-nav-item" onclick="alert('Fitur segera hadir')">
+      <span>💬</span>
+      <span>Pesan</span>
+    </button>
+    <button class="mobile-nav-item" onclick="window.location.href='/profile.html'">
+      <span>👤</span>
+      <span>Profil</span>
+    </button>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    setTheme(getTheme());
+    
+    async function loadPost() {
+      const postId = window.location.pathname.split('/')[2];
+      const container = document.getElementById('postDetail');
+      
+      try {
+        const data = await api('/api/posts');
+        const post = data.posts.find(p => p.id === postId);
+        
+        if (!post) {
+          container.innerHTML = '<div class="card"><div style="padding:40px;text-align:center;color:#f3425f;">Postingan tidak ditemukan</div></div>';
+          return;
+        }
+        
+        container.innerHTML = `
+          <div class="card post" data-post-id="${post.id}">
+            <div class="post-header">
+              <img src="${post.authorAvatar || getAvatarUrl(post.authorName)}" class="post-avatar" onclick="window.location.href='/u/${post.userId}'" alt="">
+              <div>
+                <div class="post-author" onclick="window.location.href='/u/${post.userId}'">${escapeHtml(post.authorName)}</div>
+                <div class="post-time">${formatTime(post.createdAt)}${post.updatedAt !== post.createdAt ? ' (diedit)' : ''}</div>
+              </div>
+            </div>
+            <div class="post-content">${escapeHtml(post.content)}</div>
+            ${post.image ? `<img src="${post.image}" class="post-image" alt="">` : ''}
+            <div class="post-stats">
+              <div class="reactions-bar" onclick="toggleReactions('${post.id}')">
+                <div class="reaction-icon" style="background: var(--reaction-like); z-index: 5;">👍</div>
+                ${post.likesCount > 0 ? `<span class="reaction-count">${post.likesCount}</span>` : ''}
+              </div>
+              <div>
+                <span style="cursor:pointer;" onclick="focusComment('${post.id}')">${post.commentsCount} komentar</span>
+              </div>
+            </div>
+            <div class="post-actions">
+              <button class="post-action ${post.liked ? 'active' : ''}" onclick="toggleLike('${post.id}', this)">
+                <span>👍</span> Suka
+              </button>
+              <button class="post-action" onclick="focusComment('${post.id}')">
+                <span>💬</span> Komentar
+              </button>
+              <button class="post-action" onclick="toggleShare('${post.id}')">
+                <span>↗️</span> Bagikan
+              </button>
+            </div>
+            <div class="comments-section">
+              <div id="comments-${post.id}">
+                ${post.comments.map(c => `
+                  <div class="comment">
+                    <img src="${getAvatarUrl(c.userName)}" class="comment-avatar" alt="">
+                    <div class="comment-body">
+                      <div class="comment-author">${escapeHtml(c.userName)}</div>
+                      <div class="comment-text">${escapeHtml(c.text)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="comment-input-area">
+                <img src="${currentUser?.avatar || getAvatarUrl(currentUser?.name)}" class="comment-avatar" alt="">
+                <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="Tulis komentar..." onkeydown="if(event.key==='Enter')submitComment('${post.id}')">
+                <button class="comment-submit" onclick="submitComment('${post.id}')">Kirim</button>
+              </div>
+            </div>
+            <div class="reactions-popup" id="reactions-${post.id}">
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'like')">👍</button>
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'love')">❤️</button>
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'haha')">😆</button>
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'wow')">😮</button>
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'sad')">😢</button>
+              <button class="reaction-btn" onclick="addReaction('${post.id}', 'angry')">😡</button>
+            </div>
+            <div class="share-popup" id="share-${post.id}">
+              <div class="share-item" onclick="sharePost('${post.id}', 'copy')">
+                <div class="share-icon" style="background:#e4e6eb;">📋</div>
+                <span>Salin Tautan</span>
+              </div>
+              <div class="share-item" onclick="sharePost('${post.id}', 'friends')">
+                <div class="share-icon" style="background:#e4e6eb;">👥</div>
+                <span>Kirim ke Teman</span>
+              </div>
+              <div class="share-item" onclick="sharePost('${post.id}', 'timeline')">
+                <div class="share-icon" style="background:#e4e6eb;">📄</div>
+                <span>Bagikan ke Timeline</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div class="card"><div style="padding:40px;text-align:center;color:#f3425f;">Gagal memuat: ${err.message}</div></div>`;
+      }
+    }
+
+    async function init() {
+      await checkAuth();
+      loadPost();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
